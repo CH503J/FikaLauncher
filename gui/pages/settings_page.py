@@ -16,18 +16,23 @@ class SettingsPage(tk.Frame):
         path_frame.pack(padx=20, pady=20, fill="x")
 
         # 根目录说明文字
-        ttk.Label(path_frame, text="塔科夫根目录:").pack(side="left", padx=(0, 10))
+        ttk.Label(path_frame, text="根目录:").pack(side="left", padx=(0, 10))
 
-        # 显示路径的标签
-        self.path_label = ttk.Label(path_frame, textvariable=self.root_path_var, width=50)
-        self.path_label.pack(side="left", padx=(0, 10), fill="x", expand=True)
+        # 路径输入框（可手动编辑）
+        self.path_entry = ttk.Entry(path_frame, textvariable=self.root_path_var, width=50)
+        self.path_entry.pack(side="left", fill="x", expand=True)
 
-        # 选择文件夹按钮
-        select_button = ttk.Button(path_frame, text="选择文件夹", command=self.select_folder)
+        # 输入框内容变动监听，实时保存配置
+        self.root_path_var.trace_add("write", self._on_path_change)
+
+        # 独立按钮：弹出文件夹选择对话框
+        select_button = ttk.Button(path_frame, text="浏览", command=self.select_folder)
         select_button.pack(side="right")
 
     def select_folder(self):
-        folder = filedialog.askdirectory(title="选择塔科夫根目录")
+        folder = filedialog.askdirectory(title="塔科夫根目录")
         if folder:
-            self.root_path_var.set(folder)
-            self.config.update_tarkov_root(folder)
+            self.root_path_var.set(folder)  # 触发 trace 保存配置
+
+    def _on_path_change(self, *args):
+        self.config.update_tarkov_root(self.root_path_var.get())
