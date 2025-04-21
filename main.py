@@ -10,8 +10,9 @@ Fika Headless开服器
 4. 保存gui、用户配置记录（config）
 5. 服务端日志记录（cache）
 """
-from gui.launcher_gui import TarkovLauncherGUI
+# main.py
 import tkinter as tk
+from gui.gui_launch import TarkovLauncherGUI
 
 
 def main():
