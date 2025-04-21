@@ -66,3 +66,11 @@ class ConfigManager:
 
         with open(self.config_path, "w") as configfile:
             self.config.write(configfile)
+
+    def get_tarkov_root(self):
+        return self.config.get("PATHS", "tarkov_root", fallback="")
+
+    def update_tarkov_root(self, root_path):
+        self.config["PATHS"]["tarkov_root"] = root_path
+        with open(self.config_path, "w") as configfile:
+            self.config.write(configfile)

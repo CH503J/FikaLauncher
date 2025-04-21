@@ -35,7 +35,7 @@ class TarkovLauncherGUI:
         self.home_page = HomePage(self.notebook)
         self.launch_page = LaunchPage(self.notebook)
         self.modify_page = ModifyPage(self.notebook)
-        self.settings_page = SettingsPage(self.notebook)
+        self.settings_page = SettingsPage(self.notebook, config=self.config)
 
         self.notebook.add(self.home_page, text="首页")
         self.notebook.add(self.launch_page, text="启动")
