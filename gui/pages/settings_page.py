@@ -52,14 +52,16 @@ class SettingsPage(tk.Frame):
         if folder:
             # 转换为反斜杠格式后设置路径
             self.root_path_var.set(folder.replace("/", "\\"))
+            self._check_valid_root_path(folder)  # 检查根目录路径是否有效
 
     def _on_path_change(self, *args):
         # 获取路径并转化为反斜杠
         path = self.root_path_var.get().replace("/", "\\")
-        if os.path.isdir(path):
-            self.validation_label.config(text="路径有效", foreground="green")
-            self.config.update_tarkov_root(path)  # 保存根路径，保持反斜杠格式
+        self._check_valid_root_path(path)  # 检查路径是否有效
 
+    def _check_valid_root_path(self, path):
+        """检查路径下是否包含服务端和 Headless 文件"""
+        if os.path.isdir(path):
             # 查找服务端文件
             server_path = os.path.normpath(os.path.join(path, "SPT.Server.exe"))
             if os.path.isfile(server_path):
@@ -81,6 +83,13 @@ class SettingsPage(tk.Frame):
             else:
                 self.headless_path_var.set("")
                 self.headless_status.config(text="")
+
+            # 如果根目录包含两个文件则显示有效提示
+            if os.path.isfile(server_path) and headless_file:
+                self.validation_label.config(text="路径有效", foreground="green")
+                self.config.update_tarkov_root(path)
+            else:
+                self.validation_label.config(text="路径无效，请检查", foreground="red")
         else:
             self.validation_label.config(text="路径无效，请检查", foreground="red")
             self.server_path_var.set("")
