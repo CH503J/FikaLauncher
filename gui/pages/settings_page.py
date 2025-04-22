@@ -1,93 +1,67 @@
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog
-
 from config.config import ConfigManager
+from utils.path_validator import is_valid_tarkov_root
 
 
 class SettingsPage(tk.Frame):
     def __init__(self, parent, config: ConfigManager):
         super().__init__(parent)
+        self.launcher_path_var = None
+        self.server_path_var = None
+        self.client_path_var = None
         self.config = config
+        self.root_path_var = tk.StringVar(value=self.config.get_tarkov_root().replace("/", "\\"))
 
-        root_path = self.config.get_tarkov_root().replace("/", "\\")
-        self.root_path_var = tk.StringVar(value=root_path)
+        # 根目录选择组件
+        self._create_root_selector()
 
-        # 根目录选择部分
+        # SPT 路径组
+        spt_frame = self._create_label_frame("AKI-SPT", row=2)
+        self._add_path_row(spt_frame, 2, "主程序(EscapeFromTarkov)", "client", self.config.get_client_path())
+        self._add_path_row(spt_frame, 3, "服务端(SPT.Server)", "server", self.config.get_server_path())
+        self._add_path_row(spt_frame, 4, "启动器(SPT.Launcher)", "launcher", self.config.get_launcher_path())
+
+        # Fika 路径组
+        fika_frame = self._create_label_frame("Fika", row=5)
+        self._add_path_row(fika_frame, 1, "FikaCore", "fika_core")
+        self._add_path_row(fika_frame, 2, "FikaHeadless", "fika_headless")
+        self._add_path_row(fika_frame, 3, "FikaServer", "fika_server")
+
+        # 根路径变更监听
+        self.root_path_var.trace_add("write", self._on_path_change)
+        self.grid_columnconfigure(1, weight=1)
+        self._check_valid_root_path(self.root_path_var.get())
+
+    def _create_root_selector(self):
         browse_button = ttk.Button(self, text="选择文件夹", command=self.select_folder)
         browse_button.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 
-        self.root_entry = ttk.Entry(self, textvariable=self.root_path_var, width=50)
-        self.root_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+        root_entry = ttk.Entry(self, textvariable=self.root_path_var, width=50)
+        root_entry.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
 
         self.validation_label = ttk.Label(self, text="", foreground="red")
         self.validation_label.grid(row=0, column=2, padx=10, sticky="w")
 
-        # 添加标题 SPT
-        # title_label = ttk.Label(self, text="AKI-SPT", font=("Segoe UI", 12, "bold"))
-        # title_label.grid(row=1, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
+    def _create_label_frame(self, title: str, row: int) -> ttk.LabelFrame:
+        frame = ttk.LabelFrame(self, text=title)
+        frame.grid(row=row, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
+        frame.grid_columnconfigure(1, weight=1)
+        return frame
 
-        # 创建LabelFrame容器
-        spt_frame = ttk.LabelFrame(self, text="AKI-SPT")
-        spt_frame.grid(row=2, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
-        spt_frame.grid_columnconfigure(1, weight=1)
+    def _add_path_row(self, parent, row, label_text, key, initial_value=""):
+        var = tk.StringVar(value=initial_value)
+        setattr(self, f"{key}_path_var", var)
 
-        # EscapeFromTarkov.exe路径
-        ttk.Label(spt_frame, text="主程序(EscapeFromTarkov)").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        self.client_path_var = tk.StringVar()
-        self.client_entry = ttk.Entry(spt_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.client_entry.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
-        self.client_status = ttk.Label(spt_frame, text="", foreground="green")
-        self.client_status.grid(row=2, column=2, padx=10, sticky="w")
+        ttk.Label(parent, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky="w")
+        entry = ttk.Entry(parent, textvariable=var, state="readonly", width=50)
+        entry.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
+        status = ttk.Label(parent, text="", foreground="green")
+        status.grid(row=row, column=2, padx=10, sticky="w")
 
-        # SPT.Server.exe路径
-        ttk.Label(spt_frame, text="服务端(SPT.Server)").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        self.server_path_var = tk.StringVar()
-        self.server_path_var = ttk.Entry(spt_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.server_path_var.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
-        self.server_path_var = ttk.Label(spt_frame, text="", foreground="green")
-        self.server_path_var.grid(row=3, column=2, padx=10, sticky="w")
-
-        # SPT.Launcher.exe路径
-        ttk.Label(spt_frame, text="启动器(SPT.Launcher)").grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.launcher_path_var = tk.StringVar()
-        self.launcher_path_var = ttk.Entry(spt_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.launcher_path_var.grid(row=4, column=1, padx=10, pady=5, sticky="ew")
-        self.launcher_path_var = ttk.Label(spt_frame, text="", foreground="green")
-        self.launcher_path_var.grid(row=4, column=2, padx=10, sticky="w")
-
-        # 添加标题 Fika
-        # title_label = ttk.Label(self, text="Fika", font=("Segoe UI", 12, "bold"))
-        # title_label.grid(row=5, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
-        fika_frame = ttk.LabelFrame(self, text="Fika")
-        fika_frame.grid(row=5, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
-        fika_frame.grid_columnconfigure(1, weight=1)
-
-        ttk.Label(fika_frame, text="FikaCore").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        self.fika_core_path_var = tk.StringVar()
-        self.fika_core_path_var = ttk.Entry(fika_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.fika_core_path_var.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
-        self.fika_core_path_var = ttk.Label(fika_frame, text="", foreground="green")
-        self.fika_core_path_var.grid(row=1, column=2, padx=10, sticky="w")
-
-        ttk.Label(fika_frame, text="FikaHeadless").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        self.fika_headless_path_var = tk.StringVar()
-        self.fika_headless_path_var = ttk.Entry(fika_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.fika_headless_path_var.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
-        self.fika_headless_path_var = ttk.Label(fika_frame, text="", foreground="green")
-        self.fika_headless_path_var.grid(row=2, column=2, padx=10, sticky="w")
-
-        ttk.Label(fika_frame, text="FikaServer").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        self.fika_server_path_var = tk.StringVar()
-        self.fika_server_path_var = ttk.Entry(fika_frame, textvariable=self.client_path_var, state="readonly", width=50)
-        self.fika_server_path_var.grid(row=3, column=1, padx=10, pady=5, sticky="ew")
-        self.fika_server_path_var = ttk.Label(fika_frame, text="", foreground="green")
-        self.fika_server_path_var.grid(row=3, column=2, padx=10, sticky="w")
-
-        self.root_path_var.trace_add("write", self._on_path_change)
-        self.grid_columnconfigure(1, weight=1)
-
-        self._check_valid_root_path(root_path)
+        setattr(self, f"{key}_entry", entry)
+        setattr(self, f"{key}_status", status)
 
     def select_folder(self):
         folder = filedialog.askdirectory(title="选择塔科夫根目录")
@@ -99,8 +73,11 @@ class SettingsPage(tk.Frame):
         self._check_valid_root_path(path)
 
     def _check_valid_root_path(self, path):
-        if os.path.isdir(path):
-            self.validation_label.config(text="路径有效", foreground="green")
+        if is_valid_tarkov_root(path):
+            self.validation_label.config(text="👍", foreground="green")
             self.config.update_tarkov_root(path)
+            self.client_path_var.set(self.config.get_client_path())
+            self.server_path_var.set(self.config.get_server_path())
+            self.launcher_path_var.set(self.config.get_launcher_path())
         else:
-            self.validation_label.config(text="路径无效", foreground="red")
+            self.validation_label.config(text="👎", foreground="red")
