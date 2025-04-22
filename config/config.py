@@ -1,5 +1,3 @@
-# config.py
-
 import os
 import configparser
 
@@ -23,14 +21,17 @@ class ConfigManager:
             "server_path": "",
             "launcher_path": "",
             "client_path": "",
-            "headless_path": ""
+            "headless_path": "",
+            "fika_core_path": "",
+            "fika_headless_path": "",
+            "fika_server_path": ""
         }
         self.config["NETWORK"] = {
             "ip": "127.0.0.1",
             "port": "6969"
         }
         self.config["GUI"] = {
-            "window_size": "700x600"
+            "window_size": "800x600"
         }
         with open(self.config_path, "w") as configfile:
             self.config.write(configfile)
@@ -50,6 +51,15 @@ class ConfigManager:
     def get_headless_path(self):
         return self.config.get("PATHS", "headless_path", fallback="")
 
+    def get_fika_core_path(self):
+        return self.config.get("PATHS", "fika_core_path", fallback="")
+
+    def get_fika_headless_path(self):
+        return self.config.get("PATHS", "fika_headless_path", fallback="")
+
+    def get_fika_server_path(self):
+        return self.config.get("PATHS", "fika_server_path", fallback="")
+
     def get_ip(self):
         return self.config.get("NETWORK", "ip", fallback="127.0.0.1")
 
@@ -60,7 +70,8 @@ class ConfigManager:
         return self.config.get("GUI", "window_size", fallback="700x600")
 
     def update_config(self, server_path=None, launcher_path=None, client_path=None,
-                      headless_path=None, ip=None, port=None, window_size=None):
+                      headless_path=None, fika_core_path=None, fika_headless_path=None,
+                      fika_server_path=None, ip=None, port=None, window_size=None):
         if server_path is not None:
             self.config["PATHS"]["server_path"] = server_path
         if launcher_path is not None:
@@ -69,6 +80,12 @@ class ConfigManager:
             self.config["PATHS"]["client_path"] = client_path
         if headless_path is not None:
             self.config["PATHS"]["headless_path"] = headless_path
+        if fika_core_path is not None:
+            self.config["PATHS"]["fika_core_path"] = fika_core_path
+        if fika_headless_path is not None:
+            self.config["PATHS"]["fika_headless_path"] = fika_headless_path
+        if fika_server_path is not None:
+            self.config["PATHS"]["fika_server_path"] = fika_server_path
         if ip is not None:
             self.config["NETWORK"]["ip"] = ip
         if port is not None:
@@ -82,7 +99,7 @@ class ConfigManager:
     def update_tarkov_root(self, root_path):
         self.config["PATHS"]["tarkov_root"] = root_path
 
-        # 自动填充并保存主程序、服务端、启动器路径
+        # 填充并保存主程序、服务端、启动器路径
         client = os.path.join(root_path, "EscapeFromTarkov.exe")
         server = os.path.join(root_path, "SPT.Server.exe")
         launcher = os.path.join(root_path, "SPT.Launcher.exe")
@@ -90,6 +107,15 @@ class ConfigManager:
         self.config["PATHS"]["client_path"] = client if os.path.isfile(client) else ""
         self.config["PATHS"]["server_path"] = server if os.path.isfile(server) else ""
         self.config["PATHS"]["launcher_path"] = launcher if os.path.isfile(launcher) else ""
+
+        # 填充并保存 Fika 路径
+        fika_core = os.path.join(root_path, "BepInEx", "plugins", "Fika.Core.dll")
+        fika_headless = os.path.join(root_path, "BepInEx", "plugins", "Fika.Headless.dll")
+        fika_server = os.path.join(root_path, "user", "mods", "fika-server")
+
+        self.config["PATHS"]["fika_core_path"] = fika_core if os.path.isfile(fika_core) else ""
+        self.config["PATHS"]["fika_headless_path"] = fika_headless if os.path.isfile(fika_headless) else ""
+        self.config["PATHS"]["fika_server_path"] = fika_server if os.path.isdir(fika_server) else ""
 
         with open(self.config_path, "w") as configfile:
             self.config.write(configfile)

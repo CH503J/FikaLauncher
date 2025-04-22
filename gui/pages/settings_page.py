@@ -1,4 +1,3 @@
-import os
 import tkinter as tk
 from tkinter import ttk, filedialog
 from config.config import ConfigManager
@@ -8,6 +7,9 @@ from utils.path_validator import is_valid_tarkov_root
 class SettingsPage(tk.Frame):
     def __init__(self, parent, config: ConfigManager):
         super().__init__(parent)
+        self.fika_server_path_var = None
+        self.fika_headless_path_var = None
+        self.fika_core_path_var = None
         self.launcher_path_var = None
         self.server_path_var = None
         self.client_path_var = None
@@ -79,5 +81,8 @@ class SettingsPage(tk.Frame):
             self.client_path_var.set(self.config.get_client_path())
             self.server_path_var.set(self.config.get_server_path())
             self.launcher_path_var.set(self.config.get_launcher_path())
+            self.fika_core_path_var.set(self.config.get_fika_core_path())
+            self.fika_headless_path_var.set(self.config.get_fika_headless_path())
+            self.fika_server_path_var.set(self.config.get_fika_server_path())
         else:
             self.validation_label.config(text="👎", foreground="red")
