@@ -1,3 +1,4 @@
+import json
 import os
 import configparser
 
@@ -119,3 +120,34 @@ class ConfigManager:
 
         with open(self.config_path, "w") as configfile:
             self.config.write(configfile)
+
+    # 获取版本号
+    def get_version(self):
+        tarkov_root = self.get_tarkov_root()  # 获取根路径
+        version_file_path = os.path.join(tarkov_root, "SPT_Data", "Server", "configs", "core.json")
+
+        # 检查文件是否存在
+        if os.path.isfile(version_file_path):
+            try:
+                with open(version_file_path, "r") as file:
+                    data = json.load(file)  # 解析 JSON 文件
+                    return data.get("sptVersion", "未知版本")  # 返回 sptVersion，若找不到返回 "未知版本"
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"读取或解析文件时出错: {e}")
+                return "未知版本"
+        else:
+            print(f"文件不存在: {version_file_path}")
+            return "未知版本"
+
+    def get_fika_version(self):
+        tarkov_root = self.get_tarkov_root()  # 获取根路径
+        version_file_path = os.path.join(tarkov_root, "user", "mods", "fika-server", "package.json")
+
+        if os.path.isfile(version_file_path):
+            try:
+                with open(version_file_path, "r") as file:
+                    data = json.load(file)  # 解析 JSON 文件
+                    return data.get("version", "未知版本")  # 返回 sptVersion，若找不到返回 "未知版本"
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"读取或解析文件时出错: {e}")
+                return "未知版本"
