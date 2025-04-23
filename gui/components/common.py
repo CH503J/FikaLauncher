@@ -19,22 +19,18 @@ def bind_resize_event(widget, config_manager):
 
 
 def create_label_frame(parent, title: str, row: int) -> ttk.LabelFrame:
+    """
+        创建一个带有标题的LabelFrame，并将其放置在指定的父容器中。
+
+        参数:
+        parent (tk.Widget): 父容器，LabelFrame将被放置在其中。
+        title (str): LabelFrame的标题文本。
+        row (int): LabelFrame在父容器中的行位置。
+
+        返回值:
+        ttk.LabelFrame: 创建并配置好的LabelFrame实例。
+        """
     frame = ttk.LabelFrame(parent, text=title)
     frame.grid(row=row, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
     frame.grid_columnconfigure(1, weight=1)
     return frame
-
-
-def add_path_row(parent, row, label_text, key, initial_value=""):
-    var = tk.StringVar(value=initial_value)
-    setattr(parent, f"{key}_path_var", var)
-
-    ttk.Label(parent, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky="w")
-    entry = ttk.Entry(parent, textvariable=var, state="readonly", width=50)
-    entry.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
-    status = ttk.Label(parent, text="", foreground="green")
-    status.grid(row=row, column=2, padx=10, sticky="w")
-
-    setattr(parent, f"{key}_entry", entry)
-    setattr(parent, f"{key}_status", status)
-

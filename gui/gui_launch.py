@@ -2,10 +2,10 @@
 
 import tkinter as tk
 from tkinter import ttk
-from gui.pages.home_page import HomePage
-from gui.pages.launch_page import LaunchPage
-from gui.pages.modify_page import ModifyPage
-from gui.pages.settings_page import SettingsPage
+from gui.modules.home_page import HomePage
+from gui.modules.launch_page import LaunchPage
+from gui.modules.modify_page import ModifyPage
+from gui.modules.settings_page import SettingsPage
 from config.config import ConfigManager
 from gui.components.common import bind_resize_event
 
