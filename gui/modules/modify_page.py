@@ -5,6 +5,7 @@ from tkinter import ttk, messagebox
 from gui.components import common
 from tkinter import Toplevel
 from config.config import ConfigManager
+from utils.backup_files_util import backup_files
 
 
 class ModifyPage(tk.Frame):
@@ -162,6 +163,7 @@ class ServerIpPort(IpPortBase):
         self.load_settings(self.config_file_path)
 
     def load_settings(self, config_file_path):
+        backup_files(config_file_path, r"C:\Develop\PythonProjects\FikaLauncher\cache\modifyCache\ip port")
         if os.path.exists(config_file_path):
             try:
                 with open(config_file_path, 'r', encoding='utf-8') as file:

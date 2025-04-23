@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 from config.config import ConfigManager
-from utils.path_validator import is_valid_tarkov_root
+from utils.check_root_path_util import is_valid_tarkov_root
 
 
 class SettingsPage(tk.Frame):
