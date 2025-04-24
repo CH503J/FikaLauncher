@@ -20,17 +20,19 @@ def bind_resize_event(widget, config_manager):
 
 def create_label_frame(parent, title: str, row: int) -> ttk.LabelFrame:
     """
-        创建一个带有标题的LabelFrame，并将其放置在指定的父容器中。
+    创建一个带有标题的LabelFrame，并将其放置在指定的父容器中。
 
-        参数:
-        parent (tk.Widget): 父容器，LabelFrame将被放置在其中。
-        title (str): LabelFrame的标题文本。
-        row (int): LabelFrame在父容器中的行位置。
+    参数:
+    parent (tk.Widget): 父容器，LabelFrame将被放置在其中。
+    title (str): LabelFrame的标题文本。
+    row (int): LabelFrame在父容器中的行位置。
 
-        返回值:
-        ttk.LabelFrame: 创建并配置好的LabelFrame实例。
-        """
+    返回值:
+    ttk.LabelFrame: 创建并配置好的LabelFrame实例。
+    """
     frame = ttk.LabelFrame(parent, text=title)
     frame.grid(row=row, column=0, columnspan=3, padx=10, pady=(5, 15), sticky="w")
+    frame.grid_columnconfigure(0, weight=1)  # 使列能够扩展
     frame.grid_columnconfigure(1, weight=1)
+    frame.grid_columnconfigure(2, weight=1)
     return frame
