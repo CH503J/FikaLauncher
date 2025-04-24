@@ -161,60 +161,40 @@ class LauncherServer:
             if os.path.exists(server_path):
                 # 启动服务端，保证启动脚本与服务端在同一个目录下
                 server_dir = os.path.dirname(server_path)
-                process = subprocess.Popen([server_path], cwd=server_dir)
-                self.server_pid = process.pid
-                self.server_process = process
-                time.sleep(1)  # 给服务端一些时间启动
-                print("服务端已启动")
+                log_file_path = os.path.join(server_dir, "server_log.log")  # 改为 .log 文件扩展名
+
+                with open(log_file_path, "w") as log_file:
+                    process = subprocess.Popen([server_path], cwd=server_dir, stdout=log_file, stderr=log_file)
+                    self.server_pid = process.pid
+                    self.server_process = process
+                    time.sleep(1)  # 给服务端一些时间启动
+                    print("服务端已启动，日志记录在 server_log.log 中")
             else:
                 print("服务端路径不存在！")
 
-            # 等待服务端占用端口后启动 PS1 脚本
-            self.wait_for_port_occupation()
+            # 启动 PS1 脚本
+            scripts_path = os.path.join(fika_path, "assets", "scripts")
+            if os.path.exists(scripts_path):
+                ps1_file = None
+                for file in os.listdir(scripts_path):
+                    if file.lower().startswith("start_headless_") and file.lower().endswith(".ps1"):
+                        ps1_file = os.path.join(scripts_path, file)
+                        break
 
+                if ps1_file and os.path.exists(ps1_file):
+                    self.ps1_process = subprocess.Popen(
+                        ["powershell", "-ExecutionPolicy", "Bypass", "-File", ps1_file],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    )
+                    time.sleep(1)
+                    self.ps1_pid = self.ps1_process.pid
+                    print("PS1脚本已启动")
+                else:
+                    print("未找到符合条件的PS1脚本！")
+            else:
+                print(f"PS1 脚本路径 {scripts_path} 不存在！")
         except Exception as e:
             print(f"连接错误: {e}")
-
-    def wait_for_port_occupation(self):
-        """等待服务端占用指定端口"""
-        print(f"正在等待服务端占用端口 {self.port} ...")
-        # 检查端口是否被占用，直到端口被占用
-        while not self.check_port_in_use(self.ip, self.port):
-            time.sleep(1)  # 每秒检查一次
-
-        print(f"端口 {self.port} 已被服务端占用，开始启动 PS1 脚本")
-        time.sleep(2)  # 等待2秒后启动PS1脚本
-        self.start_ps1_script()
-
-    def check_port_in_use(self, ip, port):
-        """检查指定IP和端口是否被占用"""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(1)
-            result = s.connect_ex((ip, int(port)))
-            return result == 0
-
-    def start_ps1_script(self):
-        """启动 PS1 脚本"""
-        fika_path = self.config.get_fika_server_path()  # 获取fika路径
-        scripts_path = os.path.join(fika_path, "assets", "scripts")
-        if os.path.exists(scripts_path):
-            ps1_file = None
-            for file in os.listdir(scripts_path):
-                if file.lower().startswith("start_headless_") and file.lower().endswith(".ps1"):
-                    ps1_file = os.path.join(scripts_path, file)
-                    break
-
-            if ps1_file and os.path.exists(ps1_file):
-                self.ps1_process = subprocess.Popen(
-                    ["powershell", "-ExecutionPolicy", "Bypass", "-File", ps1_file],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                )
-                self.ps1_pid = self.ps1_process.pid
-                print("PS1脚本已启动")
-            else:
-                print("未找到符合条件的PS1脚本！")
-        else:
-            print(f"PS1 脚本路径 {scripts_path} 不存在！")
 
 
 class TerminatedServer:
