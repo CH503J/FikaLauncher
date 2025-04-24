@@ -164,11 +164,12 @@ class LauncherServer:
                 log_file_path = os.path.join(server_dir, "server_log.log")  # 改为 .log 文件扩展名
 
                 with open(log_file_path, "w") as log_file:
-                    process = subprocess.Popen([server_path], cwd=server_dir, stdout=log_file, stderr=log_file)
+                    # cwd后加入stdout=log_file, stderr=log_file即可将服务端日志写入log文件
+                    process = subprocess.Popen([server_path], cwd=server_dir)
                     self.server_pid = process.pid
                     self.server_process = process
                     time.sleep(1)  # 给服务端一些时间启动
-                    print("服务端已启动，日志记录在 server_log.log 中")
+                    # print("服务端已启动，日志记录在 server_log.log 中")
             else:
                 print("服务端路径不存在！")
 
