@@ -3,6 +3,7 @@ import socket
 import subprocess
 import time
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
 
 import psutil
@@ -11,6 +12,14 @@ from config.config import ConfigManager
 from gui.components import common
 from utils.check_ip_port import get_fika_headless_path
 
+
+# todo 一键启动
+# 1. 首次执行fika_server的ps1脚本需要执行power shell解除限制命令
+# 2. ui上加入一个二级页面，点击后打开新窗口
+# 2.1 新窗口是4个按钮，解除限制以适用开发者和解除所有限制（除非你知道你在干什么）
+# 2.2 并有两个文本显示框（只读）,显示解除命令。后面跟着两个复制按钮
+# 2.3 永久修改当前用户的执行策略（推荐开发者使用）：Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# 2.4 完全解除所有限制（不推荐，除非你知道自己在做什么）：Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
 def create_log_tabs(parent_frame):
     # 创建标签页容器
@@ -44,7 +53,7 @@ def create_buttons(parent_frame):
     launcher_button = ttk.Button(parent_frame, text="一键启动", command=launcher.start)
     launcher_button.grid(row=0, column=0, padx=50, pady=5)
 
-    terminated_button = TerminatedServer()
+    terminated_button = TerminatedServer(launcher)
     terminated_button = ttk.Button(parent_frame, text="一键关闭", command=terminated_button.stop)
     terminated_button.grid(row=0, column=1, padx=50, pady=5)
 
@@ -72,7 +81,8 @@ class LaunchPage(tk.Frame):
 
 class LauncherServer:
     def __init__(self):
-        self.config = None
+        self.server_pid = None
+        self.headless_pid = None
         self.config = ConfigManager()
         # 获取服务端路径
         self.server_path = self.config.get_server_path()
@@ -133,12 +143,12 @@ class LauncherServer:
             return False
 
         server_dir = os.path.dirname(self.server_path)
-        process = subprocess.Popen(
+        server_process = subprocess.Popen(
             [self.server_path],
             cwd=server_dir,
             creationflags=subprocess.CREATE_NEW_CONSOLE
         )
-        server_pid = process.pid
+        self.server_pid = server_process.pid
 
         ip = self.ip_port_dict["ip"]
         port = int(self.ip_port_dict["port"])
@@ -155,7 +165,7 @@ class LauncherServer:
                         try:
                             p = psutil.Process(pid)
                             if target_process_name.lower() in p.name().lower():
-                                print(f'✅ 服务端已启动！PID：{server_pid}，进程：{target_process_name}')
+                                print(f'✅ 服务端已启动！PID：{self.server_pid}，进程：{target_process_name}')
                                 return True
                         except (psutil.NoSuchProcess, psutil.AccessDenied):
                             pass
@@ -163,8 +173,8 @@ class LauncherServer:
         # 超时未监听成功
         print("⚠️ 服务端监听失败，正在终止进程...")
         try:
-            process.terminate()
-            process.wait(timeout=3)
+            server_process.terminate()
+            server_process.wait(timeout=3)
             print("✅ 服务端已终止")
         except Exception as e:
             print(f"❌ 终止服务端失败：{e}")
@@ -183,16 +193,17 @@ class LauncherServer:
         try:
             # 使用 PowerShell 启动脚本，确保不阻塞主线程
             command = ["powershell", "-ExecutionPolicy", "Bypass", "-File", self.fika_headless_path[0]]
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(f"🟡 已尝试启动 Fika Headless Server，PID: {process.pid}")
+            fika_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.headless_pid = fika_process.pid
+            print(f"🟡 已尝试启动 Fika Headless Server，PID: {self.headless_pid}")
 
             # 可选：你可以加一段时间延迟，并检查是否运行中
             time.sleep(3)
-            if process.poll() is None:
+            if fika_process.poll() is None:
                 print("\n✅ Fika Headless Server 启动中")
                 return True
             else:
-                stderr = process.stderr.read().decode("utf-8")
+                stderr = fika_process.stderr.read().decode("utf-8")
                 print(f"❌ Fika Headless Server 启动失败：{stderr}")
                 return False
         except Exception as e:
@@ -201,8 +212,74 @@ class LauncherServer:
 
 
 class TerminatedServer:
+    """
+    一键关闭专用主机、Fika服务、服务端
+    """
+
+    def __init__(self, launcher):
+        self.launcher = launcher
+
     def stop(self):
-        pass
+        """
+        一键关闭，先关闭 Fika Headless，再关闭服务端
+        """
+        self.stop_fika_headless()
+        # 等待 Fika 关闭完成（进程完全退出）
+        time.sleep(2)
+        # 关闭专用主机
+        self.stop_spec_mainframe()
+        # 关闭服务端
+        self.stop_server()
+
+    def stop_spec_mainframe(self):
+        client_path = ConfigManager().get_client_path()
+        found = False
+        client_path_name = Path(client_path).name
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                if proc.info['name'] == client_path_name:
+                    print(f"🔄 正在关闭专用主机，PID: {proc.info['pid']}）...")
+                    proc.terminate()
+                    found = True
+            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                print(f"无法访问进程 {proc.info['pid']}：{e}")
+                continue
+        if not found:
+            print("未找到专用主机进程")
+
+    def stop_fika_headless(self):
+        """
+        关闭 Fika Headless 服务
+        """
+        if self.launcher.headless_pid is None:
+            print("⚠️ 未记录 Fika Headless 的 PID，跳过关闭")
+            return
+
+        try:
+            p = psutil.Process(self.launcher.headless_pid)
+            print(f"🔄 正在关闭 Fika Headless（PID: {self.launcher.headless_pid}）...")
+            p.terminate()
+            p.wait(timeout=5)
+            print(f"✅ 已成功关闭 Fika Headless")
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired) as e:
+            print(f"❌ 关闭 Fika Headless 失败：{e}")
+
+    def stop_server(self):
+        """
+        关闭服务端（在 Fika Headless 完全关闭后再执行）
+        """
+        if self.launcher.server_pid is None:
+            print("⚠️ 未记录服务端的 PID，跳过关闭")
+            return
+
+        try:
+            p = psutil.Process(self.launcher.server_pid)
+            print(f"🔄 正在关闭服务端（PID: {self.launcher.server_pid}）...")
+            p.terminate()
+            p.wait(timeout=5)
+            print(f"✅ 已成功关闭服务端")
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired) as e:
+            print(f"❌ 关闭服务端失败：{e}")
 
 
 class RelaunchedServer:
