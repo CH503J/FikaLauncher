@@ -1,11 +1,11 @@
-# gui/gui_launch.py
+# gui/launcher.py
 
 import tkinter as tk
 from tkinter import ttk
-from gui.modules.home_page import HomePage
-from gui.modules.launch_page import LaunchPage
-from gui.modules.modify_page import ModifyPage
-from gui.modules.settings_page import SettingsPage
+from gui.pages.home_page import HomePage
+from gui.pages.launch_page import LaunchPage
+from gui.pages.modify_page import ModifyPage
+from gui.pages.settings_page import SettingsPage
 from config.config import ConfigManager
 from gui.components.common import bind_resize_event
 
@@ -51,3 +51,12 @@ class TarkovLauncherGUI:
         x = int((screen_width - width) / 2)
         y = int((screen_height - height) / 2)
         self.root.geometry(f"{width}x{height}+{x}+{y}")
+
+
+if __name__ == '__main__':
+    print("=========================已启动Fika启动器=========================")
+    root = tk.Tk()
+    TarkovLauncherGUI(root)
+    root.mainloop()
+    print("=========================已关闭Fika启动器=========================")
+

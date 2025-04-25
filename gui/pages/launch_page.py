@@ -210,6 +210,14 @@ class LauncherServer:
             print(f"❌ 启动 Fika Headless Server 出错：{e}")
             return False
 
+    def set_launch_button(self, launcher_button):
+        """
+
+        :param launcher_button:
+        :return:
+        """
+        self.launch_button = launcher_button
+
 
 class TerminatedServer:
     """
