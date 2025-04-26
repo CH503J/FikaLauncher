@@ -5,13 +5,13 @@ import time
 import tkinter as tk
 from pathlib import Path
 from tkinter import ttk
+from concurrent.futures import ThreadPoolExecutor
 
 import psutil
 
 from config.config import ConfigManager
 from gui.components import common
 from utils.check_ip_port import get_fika_headless_path
-
 
 # todo 一键启动
 # 1. 首次执行fika_server的ps1脚本需要执行power shell解除限制命令
@@ -21,12 +21,13 @@ from utils.check_ip_port import get_fika_headless_path
 # 2.3 永久修改当前用户的执行策略（推荐开发者使用）：Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # 2.4 完全解除所有限制（不推荐，除非你知道自己在做什么）：Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 
+task_executor = ThreadPoolExecutor(max_workers=5)
+
+
 def create_log_tabs(parent_frame):
-    # 创建标签页容器
     notebook = ttk.Notebook(parent_frame)
     notebook.grid(row=0, column=0, sticky="nsew")
 
-    # 创建四个标签页
     tab1 = ttk.Frame(notebook)
     tab2 = ttk.Frame(notebook)
     tab3 = ttk.Frame(notebook)
@@ -37,7 +38,6 @@ def create_log_tabs(parent_frame):
     notebook.add(tab3, text="Headless")
     notebook.add(tab4, text="专用主机")
 
-    # 在每个标签页中添加内容，示例为文本框
     log_text1 = tk.Text(tab1, height=10, width=75)
     log_text1.pack(padx=20, pady=10)
     log_text2 = tk.Text(tab2, height=10, width=75)
@@ -50,15 +50,27 @@ def create_log_tabs(parent_frame):
 
 def create_buttons(parent_frame):
     launcher = LauncherServer()
-    launcher_button = ttk.Button(parent_frame, text="一键启动", command=launcher.start)
+    launcher_button = ttk.Button(
+        parent_frame,
+        text="一键启动",
+        command=lambda: task_executor.submit(launcher.start)
+    )
     launcher_button.grid(row=0, column=0, padx=50, pady=5)
 
-    terminated_button = TerminatedServer(launcher)
-    terminated_button = ttk.Button(parent_frame, text="一键关闭", command=terminated_button.stop)
+    terminated_server = TerminatedServer(launcher)
+    terminated_button = ttk.Button(
+        parent_frame,
+        text="一键关闭",
+        command=lambda: task_executor.submit(terminated_server.stop)
+    )
     terminated_button.grid(row=0, column=1, padx=50, pady=5)
 
-    relaunched_button = RelaunchedServer(launcher)
-    relaunched_button = ttk.Button(parent_frame, text="一键重启", command=relaunched_button.restart)
+    relaunched_server = RelaunchedServer(launcher)
+    relaunched_button = ttk.Button(
+        parent_frame,
+        text="一键重启",
+        command=lambda: task_executor.submit(relaunched_server.restart)
+    )
     relaunched_button.grid(row=0, column=2, padx=50, pady=5)
 
 
@@ -66,16 +78,10 @@ class LaunchPage(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
 
-        # 创建一个标题框，包含三个按钮，并将标题框铺满整个GUI宽度
         button_frame = common.create_label_frame(self, "服务", row=0)
-
-        # 在标题框中添加按钮
         create_buttons(button_frame)
 
-        # 创建日志框标题框
         log_frame = common.create_label_frame(self, "日志", row=1)
-
-        # 在日志框内添加标签页
         create_log_tabs(log_frame)
 
 
