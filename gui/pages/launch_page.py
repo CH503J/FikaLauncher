@@ -57,7 +57,7 @@ def create_buttons(parent_frame):
     terminated_button = ttk.Button(parent_frame, text="一键关闭", command=terminated_button.stop)
     terminated_button.grid(row=0, column=1, padx=50, pady=5)
 
-    relaunched_button = RelaunchedServer()
+    relaunched_button = RelaunchedServer(launcher)
     relaunched_button = ttk.Button(parent_frame, text="一键重启", command=relaunched_button.restart)
     relaunched_button.grid(row=0, column=2, padx=50, pady=5)
 
@@ -291,5 +291,16 @@ class TerminatedServer:
 
 
 class RelaunchedServer:
+    def __init__(self, launcher):
+        self.launcher = launcher
+        self.terminated = TerminatedServer(self.launcher)
+
     def restart(self):
-        pass
+        """
+        一键重启，先停止服务再启动
+        :return:
+        """
+        print("🔄 正在重启服务...")
+        self.terminated.stop()
+        time.sleep(5)
+        self.launcher.start()
